@@ -2,24 +2,29 @@ const  express =require('express')
 const bodyParser=require('body-parser')
 const Sequelize=require('sequelize');
 const cors=require('cors');
+const { appendFile } = require('fs');
 const path=require('path')
 
-const { appendFile } = require('fs');
+// const sequelize=new Sequelize({
+//     dialect: 'sqlite',
+//     storage: './sqlite/sample.db',
+//     define:{
+//         timestamps:false
+//     }
+// })
 
-const sequelize=new Sequelize(process.env.DATABASE_URL,{
+const link="https://infinite-island-25781.herokuapp.com/"
+
+const sequelize=new Sequelize({
     dialect: 'postgres',
     protocol: 'postgres',
     dialectOptions:{
-ssl:{
-    require:true,
-    rejectUnauthorized:false
-}
-    },
-    define:{
-        timestamps:false
+        ssl:{
+            require:true,
+            rejectUnauthorized:false
+        }
     }
 })
-
 
 const Book=sequelize.define('book', {
     title:Sequelize.STRING,
@@ -37,14 +42,14 @@ Book.hasMany(Chapter)
 
 const app=express()
 app.use(cors())
-app.use(express.static(path.join(__dirname,'build')))
+app.use(express.static(path.join(__dirname,'build' )))
 app.use(bodyParser.json());
-
 
 //6.trebuie sa declansam cumva crearea de tabele
 app.get('/sync', async(req, res)=>{
     try{
         await sequelize.sync({force:true})
+
         res.status(201).json({message:'created'})
     }
     catch(err){
@@ -56,7 +61,9 @@ app.get('/sync', async(req, res)=>{
 
 app.get('/books', async(req, res)=>{
     try{
-       const books=await Book.findAll()
+       const books=await Book.findAll({
+       })
+       console.log(books)
        res.status(200).json(books)
     }
     catch(err){
@@ -78,10 +85,10 @@ app.post('/books', async(req, res)=>{
 })
 app.get('/books/:bid', async(req, res)=>{
     try{
-    const book=await Book.findByPk(req.params.bid,{include:Chapter})
+    const book=await Book.findByPk(req.params.bid)
     if(book){
         res.status(200).json(book)
-    } 
+    }
     else{
         res.status(404).json({message:'not found'})
     }
@@ -127,6 +134,8 @@ app.delete('/books/:bid', async(req, res)=>{
          res.status(500).json({message: 'some error'})
      }
 })
+
+
 
 
 app.get('/books/:bid/chapters', async(req, res)=>{
@@ -248,7 +257,8 @@ app.delete('/books/:bid/chapters/:cid', async(req, res)=>{
      }
 })
 
-
 //3.app asculta pe un port
 // app.listen(8080)
-app.listen(process.env.PORT)
+var port = process.env.PORT || 8000;
+app.listen(port);
+console.log('API is runnning at ' + port);
